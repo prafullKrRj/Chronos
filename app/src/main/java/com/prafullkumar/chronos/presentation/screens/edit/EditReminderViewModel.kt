@@ -1,0 +1,169 @@
+package com.prafullkumar.chronos.presentation.screens.edit
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.prafullkumar.chronos.core.Resource
+import com.prafullkumar.chronos.domain.model.Reminder
+import com.prafullkumar.chronos.domain.repository.HomeRepository
+import com.prafullkumar.chronos.domain.repository.ReminderRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
+import java.time.ZoneId
+import javax.inject.Inject
+
+@HiltViewModel
+class EditReminderViewModel @Inject constructor(
+    private val reminderRepository: ReminderRepository,
+    private val homeRepository: HomeRepository
+) : ViewModel() {
+
+    private val _uiState = MutableStateFlow(EditReminderUiState())
+    val uiState = _uiState.asStateFlow()
+
+    private val _eventFlow = MutableSharedFlow<EditReminderEvent>()
+    val eventFlow = _eventFlow.asSharedFlow()
+
+    private var reminderId: String = ""
+
+    fun initializeReminderData(
+        id: String,
+        title: String,
+        dateTime: Long,
+        notes: String,
+        emoji: String,
+        type: String
+    ) {
+        reminderId = id
+        val localDateTime = LocalDateTime.ofInstant(
+            java.time.Instant.ofEpochMilli(dateTime),
+            ZoneId.systemDefault()
+        )
+
+        _uiState.update {
+            it.copy(
+                title = title,
+                notes = notes,
+                emoji = emoji,
+                reminderType = type,
+                selectedDateTime = localDateTime,
+                selectedDate = localDateTime.toLocalDate(),
+                selectedTime = localDateTime.toLocalTime(),
+                isInitialized = true
+            )
+        }
+    }
+
+    fun onTitleChange(newTitle: String) {
+        _uiState.update { it.copy(title = newTitle) }
+    }
+
+    fun onNotesChange(newNotes: String) {
+        _uiState.update { it.copy(notes = newNotes) }
+    }
+
+    fun onReminderTypeChange(type: String) {
+        _uiState.update { it.copy(reminderType = type) }
+    }
+
+    fun onDateSelected(date: LocalDate) {
+        _uiState.update { currentState ->
+            val time = currentState.selectedTime ?: LocalTime.now()
+            val dateTime = LocalDateTime.of(date, time)
+
+            currentState.copy(
+                selectedDate = date,
+                selectedDateTime = dateTime
+            )
+        }
+    }
+
+    fun onTimeSelected(time: LocalTime) {
+        _uiState.update { currentState ->
+            val date = currentState.selectedDate ?: LocalDate.now()
+            val dateTime = LocalDateTime.of(date, time)
+
+            currentState.copy(
+                selectedTime = time,
+                selectedDateTime = dateTime
+            )
+        }
+    }
+
+    fun showDatePicker(show: Boolean) {
+        _uiState.update { it.copy(showDatePicker = show) }
+    }
+
+    fun showTimePicker(show: Boolean) {
+        _uiState.update { it.copy(showTimePicker = show) }
+    }
+
+    fun onEmojiSelected(emoji: String) {
+        _uiState.update { it.copy(emoji = emoji, showEmojiPicker = false) }
+    }
+
+    fun showEmojiPicker(show: Boolean) {
+        _uiState.update { it.copy(showEmojiPicker = show) }
+    }
+
+    fun updateReminder() {
+        if (!_uiState.value.isFormValid) return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            val currentState = _uiState.value
+
+            val dateTime = currentState.getDateTime()
+            if (dateTime == null) {
+                _uiState.update { it.copy(isLoading = false) }
+                return@launch
+            }
+
+            val reminder = Reminder(
+                id = reminderId,
+                title = currentState.title.trim(),
+                description = currentState.notes.trim(),
+                dateTime = dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
+                emoji = currentState.emoji,
+                type = currentState.reminderType
+            )
+
+            reminderRepository.updateReminder(reminder).collectLatest { result ->
+                when (result) {
+                    is Resource.Success -> {
+                        _uiState.update { it.copy(isLoading = false) }
+                        // Invalidate cache after updating a reminder
+                        homeRepository.invalidateCache()
+                        _eventFlow.emit(EditReminderEvent.NavigateBack)
+                    }
+
+                    is Resource.Error -> {
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                error = result.message ?: "Failed to update reminder"
+                            )
+                        }
+                        _eventFlow.emit(
+                            EditReminderEvent.ShowError(
+                                result.message ?: "Failed to update reminder"
+                            )
+                        )
+                    }
+
+                    Resource.Loading -> {
+                        _uiState.update { it.copy(isLoading = true) }
+                    }
+                }
+            }
+        }
+    }
+}

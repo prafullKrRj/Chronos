@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "533276203724",
+    "project_id": "chronos-51add",
+    "storage_bucket": "chronos-51add.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:533276203724:android:1ecad8228eb27e8be04069",
+        "android_client_info": {
+          "package_name": "com.prafullkumar.chronos"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "533276203724-7d5f1r26ham71i7h3eou0lno9lnc7l00.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.prafullkumar.chronos",
+            "certificate_hash": "5db60e26a7f28fe0692d9b2db003dae6bb274c64"
+          }
+        },
+        {
+          "client_id": "533276203724-n9ccg2ss49d9vr56dv6juppmhhtkg9gv.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBQqpEaDDFJDhGqdo9e9O9kTXy0Uh527i0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "533276203724-n9ccg2ss49d9vr56dv6juppmhhtkg9gv.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

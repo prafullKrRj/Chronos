@@ -1,0 +1,10 @@
+package com.prafullkumar.chronos.presentation.screens.home
+
+import com.prafullkumar.chronos.domain.model.Reminder
+
+data class HomeUiState(
+    val userName: String = "User",
+    val groupedReminders: Map<String, List<Reminder>> = emptyMap(),
+    val isLoading: Boolean = true,
+    val error: String? = null
+)
