@@ -13,7 +13,8 @@ class ReminderMapper : Mapper<ReminderDto, Reminder> {
             data.dateTime.toDate().time,
             data.description,
             data.emoji,
-            data.type
+            data.type,
+            imageUrl = data.imageUrl
         )
     }
 
@@ -27,7 +28,8 @@ class ReminderMapper : Mapper<ReminderDto, Reminder> {
             dateTime = Timestamp(
                 domain.dateTime / 1000,
                 ((domain.dateTime % 1000) * 1000000).toInt()
-            )
+            ),
+            imageUrl = domain.imageUrl
         )
     }
 }

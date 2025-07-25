@@ -40,11 +40,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
 import com.prafullkumar.chronos.domain.model.Reminder
 import java.time.Instant
 import java.time.ZoneId
@@ -145,20 +148,31 @@ fun ReminderDetailScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        // Emoji Container
-                        Box(
-                            modifier = Modifier
-                                .size(100.dp)
-                                .background(
-                                    MaterialTheme.colorScheme.primaryContainer,
-                                    CircleShape
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = reminder.emoji,
-                                fontSize = 42.sp
+                        // Image or Emoji Container
+                        if (reminder.imageUrl != null) {
+                            AsyncImage(
+                                model = reminder.imageUrl,
+                                contentDescription = "Reminder image",
+                                modifier = Modifier
+                                    .size(100.dp)
+                                    .clip(CircleShape),
+                                contentScale = ContentScale.Crop
                             )
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .size(100.dp)
+                                    .background(
+                                        MaterialTheme.colorScheme.primaryContainer,
+                                        CircleShape
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = reminder.emoji,
+                                    fontSize = 42.sp
+                                )
+                            }
                         }
 
                         // Title

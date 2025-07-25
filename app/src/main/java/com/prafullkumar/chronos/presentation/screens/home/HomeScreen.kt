@@ -39,12 +39,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
 import com.prafullkumar.chronos.domain.model.Reminder
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -252,69 +255,6 @@ fun HomeScreen(
             }
         }
     }
-
-    @Composable
-    fun ReminderCard(
-        reminder: Reminder,
-        onClick: () -> Unit
-    ) {
-        Card(
-            onClick = onClick,
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainer
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = reminder.emoji ?: "📝",
-                    fontSize = 24.sp,
-                    modifier = Modifier.padding(end = 12.dp)
-                )
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = reminder.title,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-
-                    if (reminder.description.isNotBlank()) {
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = reminder.description,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.alpha(0.8f)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = SimpleDateFormat(
-                            "MMM dd, yyyy 'at' hh:mm a",
-                            Locale.getDefault()
-                        ).format(java.util.Date(reminder.dateTime)),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-            }
-        }
-    }
 }
 
 @Composable
@@ -337,11 +277,23 @@ fun ReminderCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            if (reminder.imageUrl != null) {
+                AsyncImage(
+                    model = reminder.imageUrl,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .padding(end = 12.dp)
+                        .clip(RoundedCornerShape(8.dp)),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
             Text(
                 text = reminder.emoji ?: "📝",
                 fontSize = 24.sp,
                 modifier = Modifier.padding(end = 12.dp)
             )
+            }
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(

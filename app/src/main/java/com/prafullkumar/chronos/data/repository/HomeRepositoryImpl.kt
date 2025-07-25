@@ -156,6 +156,7 @@ fun DocumentSnapshot.toReminderDto(): ReminderDto {
         description = getString("description") ?: "",
         dateTime = getTimestamp("dateTime") ?: Timestamp.now(),
         emoji = getString("emoji") ?: "",
-        type = getString("type") ?: ""
+        type = getString("type") ?: "",
+        imageUrl = getString("imageUrl")
     )
 }

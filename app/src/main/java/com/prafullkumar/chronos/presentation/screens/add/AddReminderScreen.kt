@@ -1,5 +1,6 @@
 package com.prafullkumar.chronos.presentation.screens.add
 
+import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -19,7 +20,6 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -72,6 +72,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.prafullkumar.chronos.presentation.screens.edit.CircularImagePicker
+import com.prafullkumar.chronos.presentation.screens.edit.ImagePickerDialog
+
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -125,7 +128,10 @@ fun AddReminderScreen(
                 showDatePicker = viewModel::showDatePicker,
                 showTimePicker = viewModel::showTimePicker,
                 onDateSelected = viewModel::onDateSelected,
-                onTimeSelected = viewModel::onTimeSelected
+                onTimeSelected = viewModel::onTimeSelected,
+                onImageSelected = viewModel::onImageSelected,
+                onRemoveImage = viewModel::onRemoveImage,
+                showImagePicker = viewModel::showImagePicker
             )
 
             if (uiState.isLoading) {
@@ -174,7 +180,10 @@ private fun AddReminderContent(
     showDatePicker: (Boolean) -> Unit,
     showTimePicker: (Boolean) -> Unit,
     onDateSelected: (LocalDate) -> Unit,
-    onTimeSelected: (LocalTime) -> Unit
+    onTimeSelected: (LocalTime) -> Unit,
+    onImageSelected: (Uri) -> Unit,
+    onRemoveImage: () -> Unit,
+    showImagePicker: (Boolean) -> Unit
 ) {
     val focusManager = LocalFocusManager.current
     val isEnabled = !uiState.isLoading
@@ -189,9 +198,12 @@ private fun AddReminderContent(
     ) {
         Spacer(modifier = Modifier.height(8.dp))
 
-        EmojiPicker(
+        CircularImagePicker(
+            selectedImageUri = uiState.selectedImageUri,
+            currentImageUrl = null,
             selectedEmoji = uiState.emoji,
-            onClick = { showEmojiPicker(true) },
+            onClick = { showImagePicker(true) },
+            onRemoveImage = if (uiState.selectedImageUri != null) onRemoveImage else null,
             enabled = isEnabled
         )
 
@@ -238,6 +250,13 @@ private fun AddReminderContent(
         EmojiPickerDialog(
             onDismiss = { showEmojiPicker(false) },
             onEmojiSelected = onEmojiSelected
+        )
+    }
+
+    if (uiState.showImagePicker) {
+        ImagePickerDialog(
+            onDismiss = { showImagePicker(false) },
+            onImageSelected = onImageSelected
         )
     }
 }
@@ -384,36 +403,6 @@ private fun DateTimePickerDialogs(
     }
 }
 
-@Composable
-private fun EmojiPicker(
-    selectedEmoji: String,
-    onClick: () -> Unit,
-    enabled: Boolean
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(100.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.secondaryContainer)
-                .clickable(enabled = enabled, onClick = onClick),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = selectedEmoji,
-                style = MaterialTheme.typography.displayMedium
-            )
-        }
-        Text(
-            "Tap to change icon",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
 
 @Composable
 private fun EmojiPickerDialog(

@@ -27,6 +27,7 @@ sealed interface Routes {
         val description: String = "",
         val emoji: String = "",
         val type: String = "general",
+        val imageUrl: String? = null
     ) : Routes
 
     @Serializable
@@ -37,6 +38,7 @@ sealed interface Routes {
         val description: String = "",
         val emoji: String = "",
         val type: String = "general",
+        val imageUrl: String? = null
     ) : Routes
 
     @Serializable

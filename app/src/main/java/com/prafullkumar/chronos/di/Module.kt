@@ -4,12 +4,14 @@ import android.app.AlarmManager
 import android.content.Context
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.storage.FirebaseStorage
 import com.prafullkumar.chronos.data.cache.CacheManager
 import com.prafullkumar.chronos.data.managers.ChronosAlarmManager
 import com.prafullkumar.chronos.data.preferences.ThemePreferences
 import com.prafullkumar.chronos.data.repository.HomeRepositoryImpl
 import com.prafullkumar.chronos.data.repository.LoginRepositoryImpl
 import com.prafullkumar.chronos.data.repository.ReminderRepositoryImpl
+import com.prafullkumar.chronos.data.storage.FirebaseStorageUploader
 import com.prafullkumar.chronos.domain.repository.HomeRepository
 import com.prafullkumar.chronos.domain.repository.LoginRepository
 import com.prafullkumar.chronos.domain.repository.ReminderRepository
@@ -24,6 +26,21 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object Module {
+
+    @Provides
+    @Singleton
+    fun providesFirebaseStorage(): FirebaseStorage {
+        return FirebaseStorage.getInstance()
+    }
+    @Provides
+    @Singleton
+    fun provideFirebaseStorageUploader(
+        firebaseStorage: FirebaseStorage,
+        firebaseAuth: FirebaseAuth,
+        @ApplicationContext context: Context
+    ): FirebaseStorageUploader {
+        return FirebaseStorageUploader(firebaseStorage, firebaseAuth, context)
+    }
 
     @Provides
     @Singleton
@@ -105,14 +122,14 @@ object Module {
         fireStore: FirebaseFirestore,
         alarmManager: ChronosAlarmManager,
         cacheManager: CacheManager,
-        homeRepository: HomeRepository
+        firebaseStorageUploader: FirebaseStorageUploader
     ): ReminderRepository {
         return ReminderRepositoryImpl(
             firebaseAuth = firebaseAuth,
             firebaseFirestore = fireStore,
             alarmManager = alarmManager,
             cacheManager = cacheManager,
-            homeRepository = homeRepository
+            storageUploader = firebaseStorageUploader
         )
     }
 }

@@ -1,5 +1,6 @@
 package com.prafullkumar.chronos.presentation.screens.add
 
+import android.net.Uri
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -16,6 +17,8 @@ data class AddReminderUiState(
     val showTimePicker: Boolean = false,
     val showEmojiPicker: Boolean = false,
     val isLoading: Boolean = false,
+    val selectedImageUri: Uri? = null,
+    val showImagePicker: Boolean = false
 ) {
     val isFormValid: Boolean
         get() {

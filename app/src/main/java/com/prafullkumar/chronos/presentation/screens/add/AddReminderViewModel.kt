@@ -1,10 +1,11 @@
 package com.prafullkumar.chronos.presentation.screens.add
 
+import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.prafullkumar.chronos.core.Resource
 import com.prafullkumar.chronos.domain.model.Reminder
-import com.prafullkumar.chronos.domain.repository.HomeRepository
 import com.prafullkumar.chronos.domain.repository.ReminderRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -28,8 +29,7 @@ sealed interface AddReminderEvent {
 
 @HiltViewModel
 class AddReminderViewModel @Inject constructor(
-    private val repository: ReminderRepository,
-    private val homeRepository: HomeRepository
+    private val repository: ReminderRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AddReminderUiState())
@@ -103,6 +103,29 @@ class AddReminderViewModel @Inject constructor(
         _uiState.update { it.copy(showEmojiPicker = show) }
     }
 
+    fun onImageSelected(uri: Uri) {
+        _uiState.update {
+            it.copy(
+                selectedImageUri = uri,
+                showImagePicker = false,
+                emoji = "🖼️" // Set a default emoji when image is selected
+            )
+        }
+    }
+
+    fun onRemoveImage() {
+        _uiState.update {
+            it.copy(
+                selectedImageUri = null,
+                emoji = "⏰" // Reset to default emoji
+            )
+        }
+    }
+
+    fun showImagePicker(show: Boolean) {
+        _uiState.update { it.copy(showImagePicker = show) }
+    }
+
     fun saveReminder() {
         if (!_uiState.value.isFormValid) return
 
@@ -110,46 +133,51 @@ class AddReminderViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true) }
             val currentState = _uiState.value
 
-            // Get the combined date and time
             val dateTime = currentState.getDateTime()
-
             if (dateTime == null) {
                 _uiState.update { it.copy(isLoading = false) }
                 _eventFlow.emit(AddReminderEvent.ShowError("Please select a valid date and time"))
                 return@launch
             }
 
-            val reminder = Reminder(
-                title = currentState.title.trim(),
-                description = currentState.notes.trim(),
-                dateTime = dateTime.atZone(ZoneId.systemDefault())
-                    .toInstant().toEpochMilli(),
-                emoji = currentState.emoji
-            )
+            try {
+                val reminder = Reminder(
+                    title = currentState.title.trim(),
+                    description = currentState.notes.trim(),
+                    dateTime = dateTime.atZone(ZoneId.systemDefault())
+                        .toInstant().toEpochMilli(),
+                    emoji = currentState.emoji,
+                )
 
-            repository.saveReminder(reminder).collectLatest { response ->
-                when (response) {
-                    is Resource.Error -> {
-                        _uiState.update { it.copy(isLoading = false) }
-                        val errorMessage = when {
-                            response.message?.contains("network", ignoreCase = true) == true ->
-                                "No internet connection. Please check your network and try again."
-                            response.message?.contains("timeout", ignoreCase = true) == true ->
-                                "Request timed out. Please try again."
-                            else -> "Failed to save reminder: ${response.message ?: "Unknown error"}"
+                repository.saveReminder(reminder, currentState.selectedImageUri).collectLatest { response ->
+                    when (response) {
+                        is Resource.Error -> {
+                            _uiState.update { it.copy(isLoading = false) }
+                            val errorMessage = when {
+                                response.message?.contains("network", ignoreCase = true) == true ->
+                                    "No internet connection. Please check your network and try again."
+
+                                response.message?.contains("timeout", ignoreCase = true) == true ->
+                                    "Request timed out. Please try again."
+
+                                else -> "Failed to save reminder: ${response.message ?: "Unknown error"}"
+                            }
+                            _eventFlow.emit(AddReminderEvent.ShowError(errorMessage))
                         }
-                        _eventFlow.emit(AddReminderEvent.ShowError(errorMessage))
-                    }
 
-                    Resource.Loading -> {
-                        _uiState.update { it.copy(isLoading = true) }
-                    }
+                        Resource.Loading -> {
+                            _uiState.update { it.copy(isLoading = true) }
+                        }
 
-                    is Resource.Success<*> -> {
-                        _uiState.update { it.copy(isLoading = false) }
-                        _eventFlow.emit(AddReminderEvent.NavigateBack)
+                        is Resource.Success<*> -> {
+                            _uiState.update { it.copy(isLoading = false) }
+                            _eventFlow.emit(AddReminderEvent.NavigateBack)
+                        }
                     }
                 }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isLoading = false) }
+                _eventFlow.emit(AddReminderEvent.ShowError("Failed to upload image: ${e.message}"))
             }
         }
     }

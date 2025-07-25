@@ -9,14 +9,15 @@ data class Reminder(
     val description: String = "",
     val emoji: String = "",
     val type: String = "general",
+    val imageUrl: String? = null
 ) {
     fun toReminderScreen() = Routes.ReminderDetailsScreen(
-        id, title, dateTime, description, emoji, type
+        id, title, dateTime, description, emoji, type, imageUrl
     )
 
     fun toEditScreen(): Routes.EditScreen {
         return Routes.EditScreen(
-            id, title, dateTime, description, emoji, type
+            id, title, dateTime, description, emoji, type, imageUrl
         )
     }
 }

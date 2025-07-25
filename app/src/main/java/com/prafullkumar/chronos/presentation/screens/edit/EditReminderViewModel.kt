@@ -1,10 +1,11 @@
 package com.prafullkumar.chronos.presentation.screens.edit
 
+import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.prafullkumar.chronos.core.Resource
 import com.prafullkumar.chronos.domain.model.Reminder
-import com.prafullkumar.chronos.domain.repository.HomeRepository
 import com.prafullkumar.chronos.domain.repository.ReminderRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -22,8 +23,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class EditReminderViewModel @Inject constructor(
-    private val reminderRepository: ReminderRepository,
-    private val homeRepository: HomeRepository
+    private val reminderRepository: ReminderRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(EditReminderUiState())
@@ -40,14 +40,15 @@ class EditReminderViewModel @Inject constructor(
         dateTime: Long,
         notes: String,
         emoji: String,
-        type: String
+        type: String,
+        imageUrl: String? = null
     ) {
         reminderId = id
         val localDateTime = LocalDateTime.ofInstant(
             java.time.Instant.ofEpochMilli(dateTime),
             ZoneId.systemDefault()
         )
-
+        Log.d("EditReminderViewModel", "initializeReminderData: $imageUrl")
         _uiState.update {
             it.copy(
                 title = title,
@@ -57,6 +58,7 @@ class EditReminderViewModel @Inject constructor(
                 selectedDateTime = localDateTime,
                 selectedDate = localDateTime.toLocalDate(),
                 selectedTime = localDateTime.toLocalTime(),
+                currentImageUrl = imageUrl,
                 isInitialized = true
             )
         }
@@ -114,6 +116,28 @@ class EditReminderViewModel @Inject constructor(
         _uiState.update { it.copy(showEmojiPicker = show) }
     }
 
+    fun onImageSelected(uri: Uri) {
+        _uiState.update {
+            it.copy(
+                selectedImageUri = uri,
+                showImagePicker = false
+            )
+        }
+    }
+
+    fun onRemoveImage() {
+        _uiState.update {
+            it.copy(
+                selectedImageUri = null,
+                currentImageUrl = null
+            )
+        }
+    }
+
+    fun showImagePicker(show: Boolean) {
+        _uiState.update { it.copy(showImagePicker = show) }
+    }
+
     fun updateReminder() {
         if (!_uiState.value.isFormValid) return
 
@@ -127,40 +151,57 @@ class EditReminderViewModel @Inject constructor(
                 return@launch
             }
 
-            val reminder = Reminder(
-                id = reminderId,
-                title = currentState.title.trim(),
-                description = currentState.notes.trim(),
-                dateTime = dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
-                emoji = currentState.emoji,
-                type = currentState.reminderType
-            )
+            try {
+                var imageUrl = currentState.currentImageUrl
 
-            reminderRepository.updateReminder(reminder).collectLatest { result ->
-                when (result) {
-                    is Resource.Success -> {
-                        _uiState.update { it.copy(isLoading = false) }
-                        _eventFlow.emit(EditReminderEvent.NavigateToHome)
-                    }
+                // Upload new image if selected, this will overwrite existing image
+                if (currentState.selectedImageUri != null) {
+                    imageUrl = reminderRepository.uploadImage(currentState.selectedImageUri, reminderId)
+                }
+                // If image was removed
+                else if (currentState.selectedImageUri == null && currentState.currentImageUrl == null) {
+                    imageUrl = null
+                }
 
-                    is Resource.Error -> {
-                        _uiState.update {
-                            it.copy(
-                                isLoading = false,
-                                error = result.message ?: "Failed to update reminder"
+                val reminder = Reminder(
+                    id = reminderId,
+                    title = currentState.title.trim(),
+                    description = currentState.notes.trim(),
+                    dateTime = dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
+                    emoji = currentState.emoji,
+                    type = currentState.reminderType,
+                    imageUrl = imageUrl
+                )
+
+                reminderRepository.updateReminder(reminder).collectLatest { result ->
+                    when (result) {
+                        is Resource.Success -> {
+                            _uiState.update { it.copy(isLoading = false) }
+                            _eventFlow.emit(EditReminderEvent.NavigateToHome)
+                        }
+
+                        is Resource.Error -> {
+                            _uiState.update {
+                                it.copy(
+                                    isLoading = false,
+                                    error = result.message ?: "Failed to update reminder"
+                                )
+                            }
+                            _eventFlow.emit(
+                                EditReminderEvent.ShowError(
+                                    result.message ?: "Failed to update reminder"
+                                )
                             )
                         }
-                        _eventFlow.emit(
-                            EditReminderEvent.ShowError(
-                                result.message ?: "Failed to update reminder"
-                            )
-                        )
-                    }
 
-                    Resource.Loading -> {
-                        _uiState.update { it.copy(isLoading = true) }
+                        Resource.Loading -> {
+                            _uiState.update { it.copy(isLoading = true) }
+                        }
                     }
                 }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isLoading = false) }
+                _eventFlow.emit(EditReminderEvent.ShowError("Failed to upload image: ${e.message}"))
             }
         }
     }

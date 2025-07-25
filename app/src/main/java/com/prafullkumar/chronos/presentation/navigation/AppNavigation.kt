@@ -67,6 +67,7 @@ fun AppNavigation(intent: Intent) {
                 notes = route.description,
                 emoji = route.emoji,
                 type = route.type,
+                imageUrl = route.imageUrl,
                 onNavigateBack = {
                     navController.popBackStack()
                 },

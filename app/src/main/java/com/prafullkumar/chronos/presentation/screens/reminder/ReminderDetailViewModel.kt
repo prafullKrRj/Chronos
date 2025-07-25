@@ -45,6 +45,7 @@ class ReminderDetailViewModel @Inject constructor(
             dateTime = savedStateHandle.get<Long>("dateTime") ?: 0L,
             type = savedStateHandle.get<String>("type") ?: "",
             emoji = savedStateHandle.get<String>("emoji") ?: "",
+            imageUrl = savedStateHandle.get<String>("imageUrl") ?: ""
         )
 
         _uiState.update { it.copy(reminder = reminder, isLoading = false) }

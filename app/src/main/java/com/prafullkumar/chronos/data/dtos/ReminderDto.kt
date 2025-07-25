@@ -10,4 +10,5 @@ data class ReminderDto(
     val dateTime: Timestamp,
     val emoji: String = "",
     val type: String,
+    val imageUrl: String? = null
 )
