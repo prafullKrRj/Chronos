@@ -5,6 +5,7 @@ import android.util.Log
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.storage.FirebaseStorage
 import com.prafullkumar.chronos.core.Resource
 import com.prafullkumar.chronos.core.UPCOMING_AND_CURRENT_DAY_REMINDERS_CACHE_KEY
 import com.prafullkumar.chronos.data.cache.CacheManager
@@ -26,7 +27,8 @@ class ReminderRepositoryImpl @Inject constructor(
     private val firebaseFirestore: FirebaseFirestore,
     private val alarmManager: ChronosAlarmManager,
     private val cacheManager: CacheManager,
-    private val storageUploader: FirebaseStorageUploader
+    private val storageUploader: FirebaseStorageUploader,
+    private val firebaseStorage: FirebaseStorage
 ) : ReminderRepository {
     private val reminderMapper = ReminderMapper()
     private val userReference =
@@ -83,6 +85,7 @@ class ReminderRepositoryImpl @Inject constructor(
             emit(Resource.Loading)
             try {
                 alarmManager.cancelAlarm(reminderId)
+
                 userReference.collection("reminders").document(reminderId).delete().await()
 
                 // Remove from cache
@@ -101,6 +104,19 @@ class ReminderRepositoryImpl @Inject constructor(
             try {
                 userReference.collection("reminders").get().await().documents.forEach { document ->
                     alarmManager.cancelAlarm(document.id)
+
+                    // Delete image from storage if it exists
+                    try {
+                        val imagePath =
+                            "users/${firebaseAuth.currentUser?.uid}/${document.id}_image.jpg"
+                        firebaseStorage.reference.child(imagePath).delete().await()
+                    } catch (imageDeleteException: Exception) {
+                        Log.w(
+                            "ReminderRepositoryImpl",
+                            "Failed to delete image for reminder ${document.id}: ${imageDeleteException.message}"
+                        )
+                    }
+
                     document.reference.delete().await()
                 }
                 emit(Resource.Success(Unit))
@@ -114,10 +130,23 @@ class ReminderRepositoryImpl @Inject constructor(
         return flow {
             emit(Resource.Loading)
             try {
-                userReference.collection("reminders")
-                    .whereLessThan("dateTime", Timestamp.now())
-                    .get().await().documents.forEach { document ->
+                val oldReminders = userReference.collection("reminders")
+                    .whereLessThan("dateTime", Timestamp.now()).get().await()
+
+                oldReminders.documents.forEach { document ->
                         alarmManager.cancelAlarm(document.id)
+
+                    // Delete image from storage if it exists
+                    try {
+                        val imagePath =
+                            "users/${firebaseAuth.currentUser?.uid}/${document.id}_image.jpg"
+                        firebaseStorage.reference.child(imagePath).delete().await()
+                    } catch (imageDeleteException: Exception) {
+                        Log.w(
+                            "ReminderRepositoryImpl",
+                            "Failed to delete image for reminder ${document.id}: ${imageDeleteException.message}"
+                        )
+                    }
                         document.reference.delete().await()
                     }
 

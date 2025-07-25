@@ -122,14 +122,16 @@ object Module {
         fireStore: FirebaseFirestore,
         alarmManager: ChronosAlarmManager,
         cacheManager: CacheManager,
-        firebaseStorageUploader: FirebaseStorageUploader
+        firebaseStorageUploader: FirebaseStorageUploader,
+        firebaseStorage: FirebaseStorage
     ): ReminderRepository {
         return ReminderRepositoryImpl(
             firebaseAuth = firebaseAuth,
             firebaseFirestore = fireStore,
             alarmManager = alarmManager,
             cacheManager = cacheManager,
-            storageUploader = firebaseStorageUploader
+            storageUploader = firebaseStorageUploader,
+            firebaseStorage
         )
     }
 }
