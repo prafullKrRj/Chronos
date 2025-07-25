@@ -15,7 +15,7 @@ Chronos is an intuitive Android reminder application that helps you stay organiz
 
 ## 📱 Download
 
-[📲 Download APK](https://drive.google.com/file/d/1vgTGuSRG_o70GsxNn9SrapyMPpIjux4N/view?usp=sharing)
+[📲 Download APK](https://drive.google.com/file/d/1_WWqHRCegQ0PYdS1FNCSW4P3tFF97Bve/view?usp=sharing)
 
 ## 🎯 Features
 
@@ -37,6 +37,13 @@ Chronos is an intuitive Android reminder application that helps you stay organiz
 - **Material 3 Design** - Latest Google design language
 - **Dynamic Theming** - Light/Dark mode with system preference
 - **Responsive Design** - Optimized for all screen sizes
+
+
+## 🤖 AI Message Suggestion
+Chronos integrates with an AI message generation API to provide contextual suggestions or motivational reminders.
+
+### 🔗 API Used:
+(https://text.pollinations.ai/prompt/{prompt})
 
 ## 🏗️ Architecture
 
