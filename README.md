@@ -213,9 +213,9 @@ AlarmReceiver - Process alarm triggers
 
 ## 💾 Data Management
 
-- **Smart Caching** - Efficient data caching with CacheManager
+- **Smart Caching** - Efficient data caching with CacheManager reducing internet calls.
 - **DataStore Preferences** - Modern preference storage
-- **Offline Support** - Full offline functionality
+- **FirebaseListner** - For real time updates.
 
 ## 🔐 Security Features
 
