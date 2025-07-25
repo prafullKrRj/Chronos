@@ -114,7 +114,7 @@ Clean Architecture + MVVM
     </tr>
     <tr>
       <td align="center">
-        <img src="https://github.com/prafullKrRj/Chronos/blob/master/images/Screenshot_20250725_143347.png?raw=true" alt="Reminder from Notification" width="280" style="border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
+        <img src="https://github.com/prafullKrRj/Chronos/blob/master/images/Screenshot_20250725_172711.png?raw=true" alt="Reminder from Notification" width="280" style="border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
         <br><strong>Reminder from Notification</strong>
         <br><sub>Quick access from notifications</sub>
       </td>
