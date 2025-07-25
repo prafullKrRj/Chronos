@@ -56,7 +56,11 @@ Clean Architecture + MVVM
 - **Notifications**: AlarmManager + NotificationManager
 - **Architecture**: MVVM + Repository Pattern
 - **Authentication**: Custom Login System
+- **Firebase** - Firebase Storage, Firebase Authentical, Cloud Firestore
+### 🖼️ Image Handling
 
+- **Image Picker & Camera Picker**: Allows users to select images from the gallery or capture new photos for reminders.
+- **Firebase Storage**: Securely uploads and stores user images in the cloud, ensuring safe and reliable access across devices.
 ## 📱 Screens
 
 | Screen | Description |
