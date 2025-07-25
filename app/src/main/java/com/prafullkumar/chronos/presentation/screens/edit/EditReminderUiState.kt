@@ -39,9 +39,3 @@ data class EditReminderUiState(
         }
     }
 }
-
-sealed interface EditReminderEvent {
-    data object NavigateBack : EditReminderEvent
-    data class ShowError(val message: String) : EditReminderEvent
-}
-

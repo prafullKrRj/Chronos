@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Instant
-import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.ZoneId
 import javax.inject.Inject
 
@@ -43,6 +43,7 @@ class HomeViewModel @Inject constructor(
                             currentState.copy(
                                 groupedReminders = grouped,
                                 isLoading = false,
+                                isRefreshing = false,
                                 error = null
                             )
                         }
@@ -52,6 +53,7 @@ class HomeViewModel @Inject constructor(
                         _uiState.update { currentState ->
                             currentState.copy(
                                 isLoading = false,
+                                isRefreshing = false,
                                 error = result.message
                             )
                         }
@@ -65,28 +67,83 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    fun refresh() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isRefreshing = true, error = null) }
+
+            // First invalidate the cache
+            homeRepository.invalidateCache()
+
+            // Then load fresh data
+            homeRepository.upcomingAndCurrentDayReminders().collect { result ->
+                when (result) {
+                    is Resource.Success -> {
+                        val grouped = groupReminders(result.data)
+                        _uiState.update { currentState ->
+                            currentState.copy(
+                                groupedReminders = grouped,
+                                isRefreshing = false,
+                                error = null
+                            )
+                        }
+                    }
+
+                    is Resource.Error -> {
+                        _uiState.update { currentState ->
+                            currentState.copy(
+                                isRefreshing = false,
+                                error = result.message
+                            )
+                        }
+                    }
+
+                    is Resource.Loading -> {
+                        // Keep refreshing state during loading
+                    }
+                }
+            }
+        }
+    }
+
     /**
-     * Groups a list of reminders into "Today" and "Upcoming".
+     * Groups a list of reminders into "Overdue", "Today" and "Upcoming".
      */
     private fun groupReminders(reminders: List<Reminder>): Map<String, List<Reminder>> {
-        val today = LocalDate.now()
+        val now = LocalDateTime.now()
+        val today = now.toLocalDate()
 
-        // Grouping logic based on the reminder's date
+        // Grouping logic based on the reminder's date and time
         val groups = reminders.groupBy {
-            val reminderDate = Instant.ofEpochMilli(it.dateTime)
+            val reminderDateTime = Instant.ofEpochMilli(it.dateTime)
                 .atZone(ZoneId.systemDefault())
-                .toLocalDate()
+                .toLocalDateTime()
+            val reminderDate = reminderDateTime.toLocalDate()
 
             when {
-                reminderDate.isEqual(today) -> "Today"
+                reminderDate.isEqual(today) -> {
+                    if (reminderDateTime.isAfter(now)) "Today" else "Overdue Today"
+                }
+
+                reminderDate.isBefore(today) -> "Overdue"
                 else -> "Upcoming"
             }
         }
 
-        // Ensure the desired order: Today, Upcoming
+        // Sort reminders within each group
+        val sortedGroups = groups.mapValues { (groupName, reminderList) ->
+            when (groupName) {
+                "Today", "Upcoming" -> reminderList.sortedBy { it.dateTime }
+                "Overdue Today", "Overdue" -> reminderList.sortedByDescending { it.dateTime }
+                else -> reminderList
+            }
+        }
+
+        // Ensure the desired order: Today (upcoming), Overdue Today, Overdue, Upcoming
         return linkedMapOf<String, List<Reminder>>().apply {
-            groups["Today"]?.let { put("Today", it) }
-            groups["Upcoming"]?.let { put("Upcoming", it) }
+            sortedGroups["Today"]?.let { put("Today", it) }
+            sortedGroups["Overdue Today"]?.let { put("Overdue Today", it) }
+            sortedGroups["Overdue"]?.let { put("Overdue", it) }
+            sortedGroups["Upcoming"]?.let { put("Upcoming", it) }
         }
     }
 }

@@ -1,12 +1,13 @@
 package com.prafullkumar.chronos.data.repository
 
-import android.content.Context
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query.Direction.DESCENDING
+import com.prafullkumar.chronos.core.PAST_REMINDERS_CACHE_KEY
 import com.prafullkumar.chronos.core.Resource
+import com.prafullkumar.chronos.core.UPCOMING_AND_CURRENT_DAY_REMINDERS_CACHE_KEY
 import com.prafullkumar.chronos.data.cache.CacheManager
 import com.prafullkumar.chronos.data.dtos.ReminderDto
 import com.prafullkumar.chronos.data.mappers.ReminderMapper
@@ -22,7 +23,6 @@ import javax.inject.Singleton
 
 @Singleton
 class HomeRepositoryImpl @Inject constructor(
-    private val context: Context,
     private val firestore: FirebaseFirestore,
     private val firebaseAuth: FirebaseAuth,
     private val cacheManager: CacheManager
@@ -31,8 +31,7 @@ class HomeRepositoryImpl @Inject constructor(
     private val reminderMapper = ReminderMapper()
 
     // Cache keys
-    private val UPCOMING_REMINDERS_CACHE_KEY = "upcoming_reminders_${firebaseAuth.currentUser?.uid}"
-    private val PAST_REMINDERS_CACHE_KEY = "past_reminders_${firebaseAuth.currentUser?.uid}"
+
 
     // Cache duration - 5 minutes for upcoming reminders (as they are more time-sensitive)
     private val UPCOMING_CACHE_DURATION = Duration.ofMinutes(5)
@@ -58,13 +57,17 @@ class HomeRepositoryImpl @Inject constructor(
             emit(Resource.Loading)
 
             // Try to get from cache first
-            val cachedReminders = cacheManager.get<List<Reminder>>(UPCOMING_REMINDERS_CACHE_KEY)
+            val cachedReminders = cacheManager.get<List<Reminder>>(
+                UPCOMING_AND_CURRENT_DAY_REMINDERS_CACHE_KEY
+            )
             if (cachedReminders != null) {
                 emit(Resource.Success(cachedReminders))
                 return@flow
             }
 
             try {
+                val currentTime = System.currentTimeMillis()
+
                 val responses = userDocRef.collection("reminders")
                     .whereGreaterThanOrEqualTo(
                         "dateTime",
@@ -76,10 +79,16 @@ class HomeRepositoryImpl @Inject constructor(
                 val reminders = responses.documents.mapNotNull { doc ->
                     doc.toReminderDto()
                 }
-                val mappedReminders = reminderMapper.mapListToDomain(reminders)
+
+                // Filter to include only current and upcoming reminders
+                val currentAndUpcomingReminders = reminders.filter { reminder ->
+                    reminder.dateTime.toDate().time >= currentTime
+                }
+
+                val mappedReminders = reminderMapper.mapListToDomain(currentAndUpcomingReminders)
 
                 cacheManager.put(
-                    UPCOMING_REMINDERS_CACHE_KEY,
+                    UPCOMING_AND_CURRENT_DAY_REMINDERS_CACHE_KEY,
                     mappedReminders,
                     UPCOMING_CACHE_DURATION
                 )
@@ -126,8 +135,30 @@ class HomeRepositoryImpl @Inject constructor(
 
 
     override fun invalidateCache() {
-        cacheManager.clear(UPCOMING_REMINDERS_CACHE_KEY)
+        cacheManager.clear(UPCOMING_AND_CURRENT_DAY_REMINDERS_CACHE_KEY)
         cacheManager.clear(PAST_REMINDERS_CACHE_KEY)
+    }
+
+    override suspend fun refresh() {
+        // Invalidate cache first
+        invalidateCache()
+
+        // Then fetch fresh data
+        upcomingAndCurrentDayReminders().collect { result ->
+            when (result) {
+                is Resource.Success -> {
+                    // Successfully refreshed, no action needed
+                }
+
+                is Resource.Error -> {
+                    // Handle error if needed
+                }
+
+                is Resource.Loading -> {
+                    // Loading state, can be used to show loading indicators
+                }
+            }
+        }
     }
 }
 

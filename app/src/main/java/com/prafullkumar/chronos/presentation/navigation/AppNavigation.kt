@@ -69,6 +69,9 @@ fun AppNavigation(intent: Intent) {
                 type = route.type,
                 onNavigateBack = {
                     navController.popBackStack()
+                },
+                onNavigateToHome = {
+                    navController.popBackStack(Routes.HomeScreen, inclusive = false)
                 }
             )
         }

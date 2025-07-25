@@ -87,6 +87,7 @@ fun EditReminderScreen(
     emoji: String,
     type: String,
     onNavigateBack: () -> Unit,
+    onNavigateToHome: () -> Unit = {},
     viewModel: EditReminderViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -107,6 +108,7 @@ fun EditReminderScreen(
         viewModel.eventFlow.collect { event ->
             when (event) {
                 is EditReminderEvent.NavigateBack -> onNavigateBack()
+                is EditReminderEvent.NavigateToHome -> onNavigateToHome()
                 is EditReminderEvent.ShowError -> {
                     snackbarHostState.showSnackbar(event.message)
                 }

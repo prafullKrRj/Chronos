@@ -72,13 +72,11 @@ object Module {
     @Provides
     @Singleton
     fun providesHomeRepository(
-        @ApplicationContext context: Context,
         firebaseAuth: FirebaseAuth,
         fireStore: FirebaseFirestore,
         cacheManager: CacheManager
     ): HomeRepository {
         return HomeRepositoryImpl(
-            context = context,
             firestore = fireStore,
             firebaseAuth = firebaseAuth,
             cacheManager = cacheManager
@@ -103,16 +101,16 @@ object Module {
     @Provides
     @Singleton
     fun provideReminderRepository(
-        @ApplicationContext context: Context,
         firebaseAuth: FirebaseAuth,
         fireStore: FirebaseFirestore,
-        alarmManager: ChronosAlarmManager
+        alarmManager: ChronosAlarmManager,
+        cacheManager: CacheManager
     ): ReminderRepository {
         return ReminderRepositoryImpl(
-            context = context,
-            firebaseFirestore = fireStore,
             firebaseAuth = firebaseAuth,
-            alarmManager = alarmManager
+            firebaseFirestore = fireStore,
+            alarmManager = alarmManager,
+            cacheManager = cacheManager
         )
     }
 }

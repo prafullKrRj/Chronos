@@ -1,7 +1,6 @@
 package com.prafullkumar.chronos.presentation.screens.home
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -32,6 +31,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -58,6 +59,7 @@ fun HomeScreen(
     onReminderClick: (Reminder) -> Unit
 ) {
     val uiState by homeViewModel.uiState.collectAsState()
+    val pullToRefreshState = rememberPullToRefreshState()
 
     Scaffold(
         topBar = {
@@ -100,20 +102,22 @@ fun HomeScreen(
             }
         }
     ) { paddingValues ->
-        Box(
+        PullToRefreshBox(
+            isRefreshing = uiState.isRefreshing,
+            onRefresh = { homeViewModel.refresh() },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
             when {
-                uiState.isLoading -> {
+                uiState.isLoading && !uiState.isRefreshing -> {
                     CircularProgressIndicator(
                         modifier = Modifier.align(Alignment.Center),
                         strokeWidth = 2.dp
                     )
                 }
 
-                uiState.error != null -> {
+                uiState.error != null && !uiState.isRefreshing -> {
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
@@ -141,7 +145,7 @@ fun HomeScreen(
                     }
                 }
 
-                uiState.groupedReminders.isEmpty() -> {
+                uiState.groupedReminders.isEmpty() && !uiState.isLoading && !uiState.isRefreshing -> {
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
@@ -244,6 +248,69 @@ fun HomeScreen(
                             Spacer(modifier = Modifier.height(80.dp))
                         }
                     }
+                }
+            }
+        }
+    }
+
+    @Composable
+    fun ReminderCard(
+        reminder: Reminder,
+        onClick: () -> Unit
+    ) {
+        Card(
+            onClick = onClick,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainer
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = reminder.emoji ?: "📝",
+                    fontSize = 24.sp,
+                    modifier = Modifier.padding(end = 12.dp)
+                )
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = reminder.title,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
+                    if (reminder.description.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = reminder.description,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.alpha(0.8f)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = SimpleDateFormat(
+                            "MMM dd, yyyy 'at' hh:mm a",
+                            Locale.getDefault()
+                        ).format(java.util.Date(reminder.dateTime)),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Medium
+                    )
                 }
             }
         }

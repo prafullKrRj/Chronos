@@ -1,11 +1,12 @@
 package com.prafullkumar.chronos.data.repository
 
-import android.content.Context
 import android.util.Log
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.prafullkumar.chronos.core.Resource
+import com.prafullkumar.chronos.core.UPCOMING_AND_CURRENT_DAY_REMINDERS_CACHE_KEY
+import com.prafullkumar.chronos.data.cache.CacheManager
 import com.prafullkumar.chronos.data.managers.ChronosAlarmManager
 import com.prafullkumar.chronos.data.mappers.ReminderMapper
 import com.prafullkumar.chronos.domain.model.Reminder
@@ -13,17 +14,21 @@ import com.prafullkumar.chronos.domain.repository.ReminderRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.tasks.await
+import java.time.Duration
 import javax.inject.Inject
+import javax.inject.Singleton
 
+@Singleton
 class ReminderRepositoryImpl @Inject constructor(
     private val firebaseAuth: FirebaseAuth,
     private val firebaseFirestore: FirebaseFirestore,
-    private val context: Context,
-    private val alarmManager: ChronosAlarmManager
+    private val alarmManager: ChronosAlarmManager,
+    private val cacheManager: CacheManager
 ) : ReminderRepository {
     private val reminderMapper = ReminderMapper()
     private val userReference =
         firebaseFirestore.collection("users").document(firebaseAuth.currentUser?.uid ?: "")
+
 
     override fun saveReminder(reminder: Reminder): Flow<Resource<Unit>> {
         return flow {
@@ -33,6 +38,8 @@ class ReminderRepositoryImpl @Inject constructor(
                 val reminderWithId = reminder.copy(id = docRef.id)
                 docRef.set(reminderMapper.mapToData(reminderWithId)).await()
                 alarmManager.setAlarm(reminderWithId)
+                updateCacheWithNewReminder(reminderWithId)
+
                 emit(Resource.Success(Unit))
             } catch (e: Exception) {
                 emit(Resource.Error(e.message ?: "Error"))
@@ -48,6 +55,10 @@ class ReminderRepositoryImpl @Inject constructor(
                 val docRef = userReference.collection("reminders").document(reminder.id)
                 docRef.set(reminderMapper.mapToData(reminder)).await()
                 alarmManager.setAlarm(reminder)
+
+                // Update cache with updated reminder
+                updateCacheWithUpdatedReminder(reminder)
+
                 emit(Resource.Success(Unit))
             } catch (e: Exception) {
                 emit(Resource.Error(e.message ?: "Failed to update reminder"))
@@ -61,6 +72,10 @@ class ReminderRepositoryImpl @Inject constructor(
             try {
                 alarmManager.cancelAlarm(reminderId)
                 userReference.collection("reminders").document(reminderId).delete().await()
+
+                // Remove from cache
+                removeReminderFromCache(reminderId)
+
                 emit(Resource.Success(Unit))
             } catch (e: Exception) {
                 emit(Resource.Error(e.message ?: "Failed to delete reminder"))
@@ -76,6 +91,10 @@ class ReminderRepositoryImpl @Inject constructor(
                     alarmManager.cancelAlarm(document.id)
                     document.reference.delete().await()
                 }
+
+                // Clear cache
+                cacheManager.clear(UPCOMING_AND_CURRENT_DAY_REMINDERS_CACHE_KEY)
+
                 emit(Resource.Success(Unit))
             } catch (e: Exception) {
                 emit(Resource.Error(e.message ?: "Failed to delete all reminders"))
@@ -93,6 +112,10 @@ class ReminderRepositoryImpl @Inject constructor(
                         alarmManager.cancelAlarm(document.id)
                         document.reference.delete().await()
                     }
+
+                // Clear cache to force reload
+                cacheManager.clear(UPCOMING_AND_CURRENT_DAY_REMINDERS_CACHE_KEY)
+
                 emit(Resource.Success(Unit))
             } catch (e: Exception) {
                 emit(Resource.Error(e.message ?: "Failed to delete old reminders"))
@@ -104,6 +127,17 @@ class ReminderRepositoryImpl @Inject constructor(
         return flow {
             emit(Resource.Loading)
             try {
+                // Try to get from cache first
+                val cachedReminders =
+                    cacheManager.get<List<Reminder>>(UPCOMING_AND_CURRENT_DAY_REMINDERS_CACHE_KEY)
+                val cachedReminder = cachedReminders?.find { it.id == reminderId }
+
+                if (cachedReminder != null) {
+                    emit(Resource.Success(cachedReminder))
+                    return@flow
+                }
+
+                // If not in cache, fetch from Firebase
                 val document =
                     userReference.collection("reminders").document(reminderId).get().await()
                 if (document.exists()) {
@@ -116,5 +150,53 @@ class ReminderRepositoryImpl @Inject constructor(
                 emit(Resource.Error(e.message ?: "Failed to load reminder"))
             }
         }
+    }
+
+    private fun updateCacheWithNewReminder(reminder: Reminder) {
+        val cachedReminders =
+            cacheManager.get<List<Reminder>>(UPCOMING_AND_CURRENT_DAY_REMINDERS_CACHE_KEY)
+                ?.toMutableList()
+                ?: mutableListOf()
+        cachedReminders.add(reminder)
+        cacheManager.put(
+            UPCOMING_AND_CURRENT_DAY_REMINDERS_CACHE_KEY,
+            cachedReminders,
+            Duration.ofMinutes(30)
+        )
+    }
+
+    private fun updateCacheWithUpdatedReminder(reminder: Reminder) {
+        val cachedReminders =
+            cacheManager.get<List<Reminder>>(UPCOMING_AND_CURRENT_DAY_REMINDERS_CACHE_KEY)
+                ?.toMutableList()
+        if (cachedReminders != null) {
+            val index = cachedReminders.indexOfFirst { it.id == reminder.id }
+            if (index != -1) {
+                cachedReminders[index] = reminder
+                cacheManager.put(
+                    UPCOMING_AND_CURRENT_DAY_REMINDERS_CACHE_KEY,
+                    cachedReminders,
+                    Duration.ofMinutes(30)
+                )
+            }
+        }
+    }
+
+    private fun removeReminderFromCache(reminderId: String) {
+        val cachedReminders =
+            cacheManager.get<List<Reminder>>(UPCOMING_AND_CURRENT_DAY_REMINDERS_CACHE_KEY)
+                ?.toMutableList()
+        if (cachedReminders != null) {
+            cachedReminders.removeAll { it.id == reminderId }
+            cacheManager.put(
+                UPCOMING_AND_CURRENT_DAY_REMINDERS_CACHE_KEY,
+                cachedReminders,
+                Duration.ofMinutes(30)
+            )
+        }
+    }
+
+    fun invalidateCache() {
+        cacheManager.clear(UPCOMING_AND_CURRENT_DAY_REMINDERS_CACHE_KEY)
     }
 }

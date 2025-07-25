@@ -137,8 +137,7 @@ class AddReminderViewModel @Inject constructor(
 
                     is Resource.Success<*> -> {
                         _uiState.update { it.copy(isLoading = false) }
-                        // Invalidate cache after adding a new reminder
-                        homeRepository.invalidateCache()
+                        homeRepository.refresh()
                         _eventFlow.emit(AddReminderEvent.NavigateBack)
                     }
                 }

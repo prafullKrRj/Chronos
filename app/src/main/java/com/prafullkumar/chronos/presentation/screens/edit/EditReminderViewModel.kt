@@ -140,9 +140,9 @@ class EditReminderViewModel @Inject constructor(
                 when (result) {
                     is Resource.Success -> {
                         _uiState.update { it.copy(isLoading = false) }
-                        // Invalidate cache after updating a reminder
-                        homeRepository.invalidateCache()
-                        _eventFlow.emit(EditReminderEvent.NavigateBack)
+                        // Invalidate home cache to ensure fresh data
+                        homeRepository.refresh()
+                        _eventFlow.emit(EditReminderEvent.NavigateToHome)
                     }
 
                     is Resource.Error -> {

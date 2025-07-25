@@ -2,7 +2,9 @@ package com.prafullkumar.chronos.data.cache
 
 import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
+import javax.inject.Singleton
 
+@Singleton
 class CacheManager {
     private val cache = ConcurrentHashMap<String, CacheEntry<Any>>()
 

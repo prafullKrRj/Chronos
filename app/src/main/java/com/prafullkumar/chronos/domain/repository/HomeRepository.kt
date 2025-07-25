@@ -22,4 +22,5 @@ interface HomeRepository {
      * This should be called when reminders are modified
      */
     fun invalidateCache()
+    suspend fun refresh()
 }
