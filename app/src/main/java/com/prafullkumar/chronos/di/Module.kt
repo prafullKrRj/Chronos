@@ -5,13 +5,16 @@ import android.content.Context
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
+import com.prafullkumar.chronos.data.api.PollinationsApiService
 import com.prafullkumar.chronos.data.cache.CacheManager
 import com.prafullkumar.chronos.data.managers.ChronosAlarmManager
 import com.prafullkumar.chronos.data.preferences.ThemePreferences
+import com.prafullkumar.chronos.data.repository.GreetingRepositoryImpl
 import com.prafullkumar.chronos.data.repository.HomeRepositoryImpl
 import com.prafullkumar.chronos.data.repository.LoginRepositoryImpl
 import com.prafullkumar.chronos.data.repository.ReminderRepositoryImpl
 import com.prafullkumar.chronos.data.storage.FirebaseStorageUploader
+import com.prafullkumar.chronos.domain.repository.GreetingRepository
 import com.prafullkumar.chronos.domain.repository.HomeRepository
 import com.prafullkumar.chronos.domain.repository.LoginRepository
 import com.prafullkumar.chronos.domain.repository.ReminderRepository
@@ -21,11 +24,34 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
 object Module {
+
+    @Provides
+    @Singleton
+    fun provideRetrofit(): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl("https://text.pollinations.ai/")
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun providePollinationsApiService(retrofit: Retrofit): PollinationsApiService {
+        return retrofit.create(PollinationsApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideGreetingRepository(apiService: PollinationsApiService): GreetingRepository {
+        return GreetingRepositoryImpl(apiService)
+    }
 
     @Provides
     @Singleton

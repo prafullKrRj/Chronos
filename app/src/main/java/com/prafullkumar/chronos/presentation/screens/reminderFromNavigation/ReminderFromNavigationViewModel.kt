@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.prafullkumar.chronos.core.Resource
 import com.prafullkumar.chronos.domain.model.Reminder
+import com.prafullkumar.chronos.domain.repository.GreetingRepository
 import com.prafullkumar.chronos.domain.repository.ReminderRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -25,12 +26,16 @@ data class ReminderFromNavigationUiState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val customMessage: String = "",
-    val isComposingMessage: Boolean = false
+    val isComposingMessage: Boolean = false,
+    val greetingPrompt: String = "",
+    val isGeneratingGreeting: Boolean = false,
+    val isComposingGreeting: Boolean = false
 )
 
 @HiltViewModel
 class ReminderFromNavigationViewModel @Inject constructor(
     private val repository: ReminderRepository,
+    private val greetingRepository: GreetingRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -97,10 +102,23 @@ class ReminderFromNavigationViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(customMessage = message)
     }
 
+    fun updateGreetingPrompt(prompt: String) {
+        _uiState.value = _uiState.value.copy(greetingPrompt = prompt)
+    }
+
     fun startComposingMessage() {
         _uiState.value = _uiState.value.copy(
             isComposingMessage = true,
+            isComposingGreeting = false,
             customMessage = ""
+        )
+    }
+
+    fun startComposingGreeting() {
+        _uiState.value = _uiState.value.copy(
+            isComposingGreeting = true,
+            isComposingMessage = false,
+            greetingPrompt = ""
         )
     }
 
@@ -109,6 +127,41 @@ class ReminderFromNavigationViewModel @Inject constructor(
             isComposingMessage = false,
             customMessage = ""
         )
+    }
+
+    fun cancelComposingGreeting() {
+        _uiState.value = _uiState.value.copy(
+            isComposingGreeting = false,
+            greetingPrompt = ""
+        )
+    }
+
+    fun generateGreeting() {
+        if (_uiState.value.greetingPrompt.isBlank()) return
+
+        viewModelScope.launch {
+            greetingRepository.generateGreeting(_uiState.value.greetingPrompt).collectLatest { resource ->
+                when (resource) {
+                    is Resource.Loading -> {
+                        _uiState.value = _uiState.value.copy(isGeneratingGreeting = true)
+                    }
+                    is Resource.Success -> {
+                        _uiState.value = _uiState.value.copy(
+                            isGeneratingGreeting = false,
+                            customMessage = resource.data,
+                            isComposingMessage = true,
+                            isComposingGreeting = false
+                        )
+                    }
+                    is Resource.Error -> {
+                        _uiState.value = _uiState.value.copy(isGeneratingGreeting = false)
+                        _eventFlow.emit(ReminderFromNavigationEvent.ShowError(
+                            resource.message ?: "Failed to generate greeting"
+                        ))
+                    }
+                }
+            }
+        }
     }
 
     fun retryLoadReminder() {

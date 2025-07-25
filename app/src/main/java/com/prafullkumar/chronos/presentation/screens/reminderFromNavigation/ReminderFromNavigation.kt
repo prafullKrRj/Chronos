@@ -11,9 +11,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
@@ -193,43 +195,93 @@ private fun MinimalistReminderContent(
         Column(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            if (uiState.isComposingMessage) {
-                // Show message composition
-                OutlinedTextField(
-                    value = uiState.customMessage,
-                    onValueChange = viewModel::updateCustomMessage,
-                    label = { Text("Your message") },
-                    modifier = Modifier.fillMaxWidth(),
-                    minLines = 3
-                )
+            when {
+                uiState.isComposingMessage -> {
+                    // Show message composition
+                    OutlinedTextField(
+                        value = uiState.customMessage,
+                        onValueChange = viewModel::updateCustomMessage,
+                        label = { Text("Your message") },
+                        modifier = Modifier.fillMaxWidth(),
+                        minLines = 3
+                    )
 
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    OutlinedButton(
-                        onClick = viewModel::cancelComposingMessage,
-                        modifier = Modifier.weight(1f)
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text("Cancel")
-                    }
+                        OutlinedButton(
+                            onClick = viewModel::cancelComposingMessage,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Cancel")
+                        }
 
-                    Button(
-                        onClick = { onShareMessage(uiState.customMessage) },
-                        enabled = uiState.customMessage.isNotBlank(),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text("Share")
+                        Button(
+                            onClick = { onShareMessage(uiState.customMessage) },
+                            enabled = uiState.customMessage.isNotBlank(),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Share")
+                        }
                     }
                 }
-            } else {
-                // Show action button
-                OutlinedButton(
-                    onClick = viewModel::startComposingMessage,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(Icons.Default.Create, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Write Custom Message")
+
+                uiState.isComposingGreeting -> {
+                    // Show greeting composition
+                    OutlinedTextField(
+                        value = uiState.greetingPrompt,
+                        onValueChange = viewModel::updateGreetingPrompt,
+                        label = { Text("Enter prompt (e.g., 'wish John happy birthday')") },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text("wish someone happy birthday") }
+                    )
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = viewModel::cancelComposingGreeting,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Cancel")
+                        }
+
+                        Button(
+                            onClick = viewModel::generateGreeting,
+                            enabled = uiState.greetingPrompt.isNotBlank() && !uiState.isGeneratingGreeting,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            if (uiState.isGeneratingGreeting) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    strokeWidth = 2.dp
+                                )
+                            } else {
+                                Text("Generate")
+                            }
+                        }
+                    }
+                }
+
+                else -> {
+                    // Show action buttons
+                    OutlinedButton(
+                        onClick = viewModel::startComposingMessage,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.Create, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Write Custom Message")
+                    }
+
+                    OutlinedButton(
+                        onClick = viewModel::startComposingGreeting,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.AutoAwesome, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Generate AI Greeting")
+                    }
                 }
             }
         }
