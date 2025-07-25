@@ -107,17 +107,11 @@ class HomeRepositoryImpl @Inject constructor(
                 }
 
                 try {
-                    val currentTime = System.currentTimeMillis()
                     val reminders = snapshot?.documents?.mapNotNull { doc ->
                         doc.toReminderDto()
                     } ?: emptyList()
 
-                    // Filter to include only current and upcoming reminders
-                    val currentAndUpcomingReminders = reminders.filter { reminder ->
-                        reminder.dateTime.toDate().time >= currentTime
-                    }
-
-                    val mappedReminders = reminderMapper.mapListToDomain(currentAndUpcomingReminders)
+                    val mappedReminders = reminderMapper.mapListToDomain(reminders)
 
                     // Update cache with fresh data
                     cacheManager.put(

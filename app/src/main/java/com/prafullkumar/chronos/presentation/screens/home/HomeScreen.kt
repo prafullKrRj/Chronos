@@ -288,11 +288,11 @@ fun ReminderCard(
                     contentScale = ContentScale.Crop
                 )
             } else {
-            Text(
-                text = reminder.emoji ?: "📝",
-                fontSize = 24.sp,
-                modifier = Modifier.padding(end = 12.dp)
-            )
+                Text(
+                    text = reminder.emoji ?: "📝",
+                    fontSize = 24.sp,
+                    modifier = Modifier.padding(end = 12.dp)
+                )
             }
 
             Column(modifier = Modifier.weight(1f)) {

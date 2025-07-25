@@ -1,5 +1,6 @@
 package com.prafullkumar.chronos.data.repository
 
+import android.util.Log
 import com.prafullkumar.chronos.core.Resource
 import com.prafullkumar.chronos.data.api.PollinationsApiService
 import com.prafullkumar.chronos.domain.repository.GreetingRepository
@@ -15,15 +16,11 @@ class GreetingRepositoryImpl @Inject constructor(
         try {
             emit(Resource.Loading)
             val response = apiService.generateGreeting(prompt)
-            if (response.isSuccessful) {
-                val greeting = response.body() ?: "Unable to generate greeting"
-                emit(Resource.Success(greeting))
-            } else {
-                emit(Resource.Error("Failed to generate greeting: ${response.message()}"))
-            }
+            Log.d("GreetingRepositoryImpl", "Generated greeting: $response")
+            emit(Resource.Success(response ?: ""))
         } catch (e: Exception) {
+            Log.d("GreetingRepositoryImpl", "Error generating greeting: ${e.message}")
             emit(Resource.Error(e.message ?: "Network error occurred"))
         }
     }
 }
-

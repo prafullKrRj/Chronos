@@ -169,7 +169,7 @@ fun ReminderDetailScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    text = reminder.emoji,
+                                    text = if (reminder.emoji.isBlank()) "🔔" else reminder.emoji,
                                     fontSize = 42.sp
                                 )
                             }

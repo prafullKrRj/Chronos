@@ -95,4 +95,5 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging.interceptor)
     implementation(libs.converter.gson)
+    implementation(libs.converter.scalars)
 }
