@@ -56,7 +56,11 @@ Clean Architecture + MVVM
 - **Notifications**: AlarmManager + NotificationManager
 - **Architecture**: MVVM + Repository Pattern
 - **Authentication**: Custom Login System
+- **Firebase** - Firebase Storage, Firebase Authentical, Cloud Firestore
+### 🖼️ Image Handling
 
+- **Image Picker & Camera Picker**: Allows users to select images from the gallery or capture new photos for reminders.
+- **Firebase Storage**: Securely uploads and stores user images in the cloud, ensuring safe and reliable access across devices.
 ## 📱 Screens
 
 | Screen | Description |
@@ -86,7 +90,7 @@ Clean Architecture + MVVM
     </tr>
     <tr>
       <td align="center">
-        <img src="https://github.com/prafullKrRj/Chronos/blob/master/images/Screenshot_20250725_143025.png?raw=true" alt="Add Reminder" width="280" style="border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
+        <img src="https://github.com/prafullKrRj/Chronos/blob/master/images/Screenshot_20250725_165121.png?raw=true" alt="Add Reminder" width="280" style="border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
         <br><strong>Add Reminder</strong>
         <br><sub>Create new reminders easily</sub>
       </td>
