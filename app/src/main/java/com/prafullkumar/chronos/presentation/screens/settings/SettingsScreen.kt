@@ -36,6 +36,8 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -72,6 +74,8 @@ fun SettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val currentTheme by viewModel.themeMode.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
     LaunchedEffect(viewModel.settingsEvent) {
         viewModel.settingsEvent.collect { event ->
             when (event) {
@@ -83,6 +87,25 @@ fun SettingsScreen(
             }
         }
     }
+
+    // Show error and success messages
+    LaunchedEffect(uiState.error, uiState.successMessage) {
+        uiState.error?.let { error ->
+            snackbarHostState.showSnackbar(
+                message = error,
+                withDismissAction = true
+            )
+            viewModel.clearMessage()
+        }
+        uiState.successMessage?.let { success ->
+            snackbarHostState.showSnackbar(
+                message = success,
+                withDismissAction = true
+            )
+            viewModel.clearMessage()
+        }
+    }
+
     var showThemeDialog by remember { mutableStateOf(false) }
     var showSignOutDialog by remember { mutableStateOf(false) }
     var showDeleteAllDialog by remember { mutableStateOf(false) }
@@ -101,7 +124,8 @@ fun SettingsScreen(
                     }
                 }
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
         LazyColumn(
             modifier = Modifier

@@ -35,4 +35,7 @@ class CacheManager {
     fun clear(key: String) {
         cache.remove(key)
     }
+    fun clearAll() {
+        cache.clear()
+    }
 }

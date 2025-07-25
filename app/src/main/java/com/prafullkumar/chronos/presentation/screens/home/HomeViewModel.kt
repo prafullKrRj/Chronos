@@ -28,14 +28,14 @@ class HomeViewModel @Inject constructor(
     init {
         val userName = homeRepository.getUserDisplayName()
         _uiState.update { it.copy(userName = userName) }
-        loadReminders()
+        startRealtimeListening()
     }
 
-    fun loadReminders() {
+    private fun startRealtimeListening() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
+            _uiState.update { it.copy(isListening = true, isLoading = true, error = null) }
 
-            homeRepository.upcomingAndCurrentDayReminders().collect { result ->
+            homeRepository.startUpcomingRemindersListener().collect { result ->
                 when (result) {
                     is Resource.Success -> {
                         val grouped = groupReminders(result.data)
@@ -67,6 +67,14 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    fun loadReminders() {
+        // If already listening, don't start another listener
+        if (_uiState.value.isListening) {
+            return
+        }
+        startRealtimeListening()
+    }
+
     fun refresh() {
         viewModelScope.launch {
             _uiState.update { it.copy(isRefreshing = true, error = null) }
@@ -74,35 +82,15 @@ class HomeViewModel @Inject constructor(
             // First invalidate the cache
             homeRepository.invalidateCache()
 
-            // Then load fresh data
-            homeRepository.upcomingAndCurrentDayReminders().collect { result ->
-                when (result) {
-                    is Resource.Success -> {
-                        val grouped = groupReminders(result.data)
-                        _uiState.update { currentState ->
-                            currentState.copy(
-                                groupedReminders = grouped,
-                                isRefreshing = false,
-                                error = null
-                            )
-                        }
-                    }
-
-                    is Resource.Error -> {
-                        _uiState.update { currentState ->
-                            currentState.copy(
-                                isRefreshing = false,
-                                error = result.message
-                            )
-                        }
-                    }
-
-                    is Resource.Loading -> {
-                        // Keep refreshing state during loading
-                    }
-                }
-            }
+            // The real-time listener will automatically receive fresh data
+            // No need to manually fetch as the listener handles updates
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        homeRepository.stopAllListeners()
+        _uiState.update { it.copy(isListening = false) }
     }
 
     /**

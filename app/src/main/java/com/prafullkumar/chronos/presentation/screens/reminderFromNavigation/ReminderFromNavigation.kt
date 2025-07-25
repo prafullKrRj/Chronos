@@ -1,6 +1,5 @@
 package com.prafullkumar.chronos.presentation.screens.reminderFromNavigation
 
-
 import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
@@ -16,6 +15,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Create
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -25,11 +25,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -41,7 +45,6 @@ import com.prafullkumar.chronos.domain.model.Reminder
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-
 
 private fun formatDateTime(dateTime: Long): String {
     val formatter = SimpleDateFormat("MMM dd, yyyy 'at' hh:mm a", Locale.getDefault())
@@ -56,6 +59,21 @@ fun ReminderFromNavigationScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // Handle error events
+    LaunchedEffect(viewModel.eventFlow) {
+        viewModel.eventFlow.collect { event ->
+            when (event) {
+                is ReminderFromNavigationEvent.ShowError -> {
+                    snackbarHostState.showSnackbar(
+                        message = event.message,
+                        withDismissAction = true
+                    )
+                }
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -65,9 +83,17 @@ fun ReminderFromNavigationScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
+                },
+                actions = {
+                    if (uiState.error != null) {
+                        IconButton(onClick = { viewModel.retryLoadReminder() }) {
+                            Icon(Icons.Default.Refresh, contentDescription = "Retry")
+                        }
+                    }
                 }
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
         Box(
             modifier = Modifier
@@ -98,13 +124,28 @@ fun ReminderFromNavigationScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = uiState.error ?: "An error occurred",
-                            style = MaterialTheme.typography.bodyLarge,
-                            textAlign = TextAlign.Center
+                            text = "⚠️",
+                            style = MaterialTheme.typography.displayMedium
                         )
                         Spacer(modifier = Modifier.height(16.dp))
-                        Button(onClick = onNavigateBack) {
-                            Text("Go Back")
+                        Text(
+                            text = uiState.error ?: "An error occurred",
+                            style = MaterialTheme.typography.bodyLarge,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 32.dp)
+                        )
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            OutlinedButton(onClick = { viewModel.retryLoadReminder() }) {
+                                Icon(Icons.Default.Refresh, contentDescription = null)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Retry")
+                            }
+                            Button(onClick = onNavigateBack) {
+                                Text("Go Back")
+                            }
                         }
                     }
                 }

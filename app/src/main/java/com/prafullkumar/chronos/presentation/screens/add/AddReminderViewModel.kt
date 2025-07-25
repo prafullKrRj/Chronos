@@ -23,6 +23,7 @@ import javax.inject.Inject
 
 sealed interface AddReminderEvent {
     data object NavigateBack : AddReminderEvent
+    data class ShowError(val message: String) : AddReminderEvent
 }
 
 @HiltViewModel
@@ -114,6 +115,7 @@ class AddReminderViewModel @Inject constructor(
 
             if (dateTime == null) {
                 _uiState.update { it.copy(isLoading = false) }
+                _eventFlow.emit(AddReminderEvent.ShowError("Please select a valid date and time"))
                 return@launch
             }
 
@@ -129,6 +131,14 @@ class AddReminderViewModel @Inject constructor(
                 when (response) {
                     is Resource.Error -> {
                         _uiState.update { it.copy(isLoading = false) }
+                        val errorMessage = when {
+                            response.message?.contains("network", ignoreCase = true) == true ->
+                                "No internet connection. Please check your network and try again."
+                            response.message?.contains("timeout", ignoreCase = true) == true ->
+                                "Request timed out. Please try again."
+                            else -> "Failed to save reminder: ${response.message ?: "Unknown error"}"
+                        }
+                        _eventFlow.emit(AddReminderEvent.ShowError(errorMessage))
                     }
 
                     Resource.Loading -> {
@@ -137,7 +147,6 @@ class AddReminderViewModel @Inject constructor(
 
                     is Resource.Success<*> -> {
                         _uiState.update { it.copy(isLoading = false) }
-                        homeRepository.refresh()
                         _eventFlow.emit(AddReminderEvent.NavigateBack)
                     }
                 }

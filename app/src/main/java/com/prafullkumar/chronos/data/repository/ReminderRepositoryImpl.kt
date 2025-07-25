@@ -10,6 +10,7 @@ import com.prafullkumar.chronos.data.cache.CacheManager
 import com.prafullkumar.chronos.data.managers.ChronosAlarmManager
 import com.prafullkumar.chronos.data.mappers.ReminderMapper
 import com.prafullkumar.chronos.domain.model.Reminder
+import com.prafullkumar.chronos.domain.repository.HomeRepository
 import com.prafullkumar.chronos.domain.repository.ReminderRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -22,7 +23,7 @@ import javax.inject.Singleton
 class ReminderRepositoryImpl @Inject constructor(
     private val firebaseAuth: FirebaseAuth,
     private val firebaseFirestore: FirebaseFirestore,
-    private val alarmManager: ChronosAlarmManager,
+    private val alarmManager: ChronosAlarmManager, private val homeRepository: HomeRepository,
     private val cacheManager: CacheManager
 ) : ReminderRepository {
     private val reminderMapper = ReminderMapper()
@@ -91,10 +92,6 @@ class ReminderRepositoryImpl @Inject constructor(
                     alarmManager.cancelAlarm(document.id)
                     document.reference.delete().await()
                 }
-
-                // Clear cache
-                cacheManager.clear(UPCOMING_AND_CURRENT_DAY_REMINDERS_CACHE_KEY)
-
                 emit(Resource.Success(Unit))
             } catch (e: Exception) {
                 emit(Resource.Error(e.message ?: "Failed to delete all reminders"))

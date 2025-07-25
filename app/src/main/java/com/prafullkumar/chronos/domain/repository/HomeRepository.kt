@@ -7,10 +7,6 @@ import kotlinx.coroutines.flow.Flow
 interface HomeRepository {
     fun getUserDisplayName(): String
 
-    /**
-     * Fetch reminders for today and upcoming days
-     */
-    fun upcomingAndCurrentDayReminders(): Flow<Resource<List<Reminder>>>
 
     /**
      * Fetch past reminders (before today)
@@ -18,9 +14,18 @@ interface HomeRepository {
     fun getPastReminders(): Flow<Resource<List<Reminder>>>
 
     /**
+     * Start real-time listener for upcoming and current day reminders
+     */
+    fun startUpcomingRemindersListener(): Flow<Resource<List<Reminder>>>
+
+    /**
+     * Stop all real-time listeners
+     */
+    fun stopAllListeners()
+
+    /**
      * Invalidate the reminders cache
      * This should be called when reminders are modified
      */
     fun invalidateCache()
-    suspend fun refresh()
 }

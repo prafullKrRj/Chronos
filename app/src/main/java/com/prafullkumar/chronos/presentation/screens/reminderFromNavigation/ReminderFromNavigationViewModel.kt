@@ -7,12 +7,18 @@ import com.prafullkumar.chronos.core.Resource
 import com.prafullkumar.chronos.domain.model.Reminder
 import com.prafullkumar.chronos.domain.repository.ReminderRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
+sealed interface ReminderFromNavigationEvent {
+    data class ShowError(val message: String) : ReminderFromNavigationEvent
+}
 
 data class ReminderFromNavigationUiState(
     val reminder: Reminder? = null,
@@ -33,6 +39,9 @@ class ReminderFromNavigationViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(ReminderFromNavigationUiState())
     val uiState: StateFlow<ReminderFromNavigationUiState> = _uiState.asStateFlow()
 
+    private val _eventFlow = MutableSharedFlow<ReminderFromNavigationEvent>()
+    val eventFlow = _eventFlow.asSharedFlow()
+
     init {
         loadReminder()
     }
@@ -44,10 +53,18 @@ class ReminderFromNavigationViewModel @Inject constructor(
 
                 when (response) {
                     is Resource.Error -> {
+                        val errorMessage = when {
+                            response.message?.contains("network", ignoreCase = true) == true ->
+                                "No internet connection. Please check your network and try again."
+                            response.message?.contains("not found", ignoreCase = true) == true ->
+                                "Reminder not found or may have been deleted."
+                            else -> response.message ?: "Failed to load reminder"
+                        }
                         _uiState.value = _uiState.value.copy(
                             isLoading = false,
-                            error = response.message ?: "Failed to load reminder"
+                            error = errorMessage
                         )
+                        _eventFlow.emit(ReminderFromNavigationEvent.ShowError(errorMessage))
                     }
 
                     Resource.Loading -> {
@@ -59,13 +76,16 @@ class ReminderFromNavigationViewModel @Inject constructor(
                         if (reminder != null) {
                             _uiState.value = _uiState.value.copy(
                                 isLoading = false,
-                                reminder = reminder
+                                reminder = reminder,
+                                error = null
                             )
                         } else {
+                            val errorMsg = "Reminder not found or may have been deleted."
                             _uiState.value = _uiState.value.copy(
                                 isLoading = false,
-                                error = "Reminder not found"
+                                error = errorMsg
                             )
+                            _eventFlow.emit(ReminderFromNavigationEvent.ShowError(errorMsg))
                         }
                     }
                 }
@@ -91,6 +111,9 @@ class ReminderFromNavigationViewModel @Inject constructor(
         )
     }
 
+    fun retryLoadReminder() {
+        loadReminder()
+    }
 
     fun clearError() {
         _uiState.value = _uiState.value.copy(error = null)

@@ -7,5 +7,6 @@ data class HomeUiState(
     val groupedReminders: Map<String, List<Reminder>> = emptyMap(),
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
+    val isListening: Boolean = false,
     val error: String? = null
 )

@@ -104,13 +104,15 @@ object Module {
         firebaseAuth: FirebaseAuth,
         fireStore: FirebaseFirestore,
         alarmManager: ChronosAlarmManager,
-        cacheManager: CacheManager
+        cacheManager: CacheManager,
+        homeRepository: HomeRepository
     ): ReminderRepository {
         return ReminderRepositoryImpl(
             firebaseAuth = firebaseAuth,
             firebaseFirestore = fireStore,
             alarmManager = alarmManager,
-            cacheManager = cacheManager
+            cacheManager = cacheManager,
+            homeRepository = homeRepository
         )
     }
 }
