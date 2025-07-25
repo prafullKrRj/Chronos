@@ -86,7 +86,7 @@ Clean Architecture + MVVM
     </tr>
     <tr>
       <td align="center">
-        <img src="https://github.com/prafullKrRj/Chronos/blob/master/images/Screenshot_20250725_143025.png?raw=true" alt="Add Reminder" width="280" style="border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
+        <img src="https://github.com/prafullKrRj/Chronos/blob/master/images/Screenshot_20250725_165121.png?raw=true" alt="Add Reminder" width="280" style="border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
         <br><strong>Add Reminder</strong>
         <br><sub>Create new reminders easily</sub>
       </td>
