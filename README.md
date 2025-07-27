@@ -15,7 +15,7 @@ Chronos is an intuitive Android reminder application that helps you stay organiz
 
 ## 📱 Download
 
-[📲 Download APK](https://drive.google.com/file/d/1_WWqHRCegQ0PYdS1FNCSW4P3tFF97Bve/view?usp=sharing)
+[📲 Download APK](https://drive.google.com/file/d/1gG70Vc30iu7ruAtP_Gf3TBjrM7_C_ghZ/view?usp=sharing)
 
 ## 🎯 Features
 
